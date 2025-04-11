@@ -8,36 +8,43 @@ import { useRouter } from "next/navigation";
 
 export default function WalletConnect() {
   const [account, setAccount] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const peraWallet = new PeraWalletConnect();
   const router = useRouter();
 
   useEffect(() => {
-    // Attempt to reconnect if a session exists
-    peraWallet.reconnectSession().then((accounts) => {
-      if (accounts.length) {
-        setAccount(accounts[0]);
-        setIsConnected(true);
-        
+
+    const checkConnection = async () => {
+      const storedAddress = localStorage.getItem("walletAddress");
+      if (!storedAddress) {
+        await peraWallet.disconnect();
+        return;
       }
-    });
+      
+      try {
+        const accounts = await peraWallet.reconnectSession();
+        if (accounts.length) {
+          setAccount(accounts[0]);
+          router.push("/Dashboard");
+        }
+      } catch (error) {
+        console.log("No existing session");
+      }
+    };
+    
+    checkConnection();
   }, []);
 
   const connectWallet = async () => {
     try {
-      if (isConnected) {
-        console.log("Wallet is already connected:", account);
-        router.push("/Dashboard"); // Redirect to Dashboard if already connected
-        return;
-      }
+      await peraWallet.disconnect();
       
       const accounts = await peraWallet.connect();
-      setAccount(accounts[0]);
-      setIsConnected(true);
       localStorage.setItem("walletAddress", accounts[0]);
-      router.push("/Dashboard");// Send wallet address in query params
+      router.push("/Dashboard");
     } catch (error) {
-      console.error("Wallet connection failed:", error);
+      console.error("Connection failed:", error);
+      localStorage.removeItem("walletAddress");
+      await peraWallet.disconnect();
     }
   };
 
@@ -59,7 +66,6 @@ export default function WalletConnect() {
           />
         </div>
 
-        {/* Right Section - Wallet Interaction */}
         <div className="w-full lg:w-2/3 p-8 flex flex-col">
           <h2 className="text-3xl font-bold text-gray-800">
             Step into the Ultimate NFT Marketplace ✦
@@ -91,7 +97,7 @@ export default function WalletConnect() {
             ) : ( */}
               <Button
                 variant="default"
-                className="w-full bg-[#473957] hover:bg-[#8a77bd] text-white py-3"
+                className="w-full bg-[#473957] hover:bg-[#8a77bd] text-white py-3 cursor-pointer"
                 onClick={connectWallet}
               >
                 Connect Pera Wallet

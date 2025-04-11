@@ -1,8 +1,47 @@
 "use client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { userProfile } from "../AppUrl/page";
+import { useEffect, useState } from "react";
+
+interface UserInterface {
+  profile_image: string;
+}
 
 export default function Navbar(props: any) {
+  const [pictureData, setPictureData] = useState({
+    profileImage: "https://github.com/shadcn.png",
+  });
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+   useEffect(() => {
+      const storedWallet = localStorage.getItem("walletAddress");
+      console.log(storedWallet);
+      setWalletAddress(storedWallet);
+    }, []);
+  const userData = async () => {
+    try {
+      const response = await fetch(`${userProfile}=${walletAddress}`);
+      if (!response.ok) throw new Error("Failed to fetch user data");
+
+      const responseData = await response.json();
+      const userProfileData = responseData.profile;
+      if (userProfileData) {
+        setPictureData({
+          profileImage:
+            userProfileData.profile_image || "https://github.com/shadcn.png",
+        });
+      } else {
+        throw new Error("Profile not found in response");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  useEffect(() => {
+    userData();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="flex flex-row p-4 gap-4">
@@ -35,10 +74,18 @@ export default function Navbar(props: any) {
             <h1 className="text-3xl font-bold text-gray-900">
               {props.message}
             </h1>
-            <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
+            <Link href="/Profile">
+              <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
+                <AvatarImage
+                  src={pictureData.profileImage}
+                  alt="Profile"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://github.com/shadcn.png";
+                  }}
+                />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+            </Link>
           </div>
           <div className="space-y-6">{props.children}</div>
         </div>

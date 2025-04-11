@@ -4,3 +4,5 @@ export const TransactionCount = `${url}/nfts/transactions/total?wallet`
 export const CurrentMonthTransactionCount = `${url}/nfts/transactions/current-month/total?wallet`
 export const NFTs = `${url}/nfts?wallet`
 export const MonthlyTransactions = `${url}/nfts/transactions/monthly?wallet`
+export const userProfile = `${url}/nfts/profile?wallet`
+export const updateuserProfile = `${url}/nfts/update_profile`

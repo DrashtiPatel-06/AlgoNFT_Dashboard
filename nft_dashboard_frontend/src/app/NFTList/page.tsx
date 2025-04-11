@@ -6,6 +6,14 @@ import Navbar from "../Navbar/page";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface NFTData {
   arc_standard: string;
@@ -27,13 +35,18 @@ interface NFTMetadata {
 export default function NFTList() {
   const [nftList, setNftList] = useState<NFTData[]>([]);
   const [metadata, setMetadata] = useState<NFTMetadata>({});
-  const [walletAddress] = useState(localStorage.getItem("walletAddress"));
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedStandard, setSelectedStandard] = useState<string>("All");
-
+  const [nftDetailsDialog,setNFTDetailsDialog] = useState(false);
+  const [selectedNFT, setSelectedNFT] = useState<NFTData | null>(null);
   const itemsPerPage = 9;
-
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+   useEffect(() => {
+      const storedWallet = localStorage.getItem("walletAddress");
+      console.log(storedWallet);
+      setWalletAddress(storedWallet);
+    }, []);
   useEffect(() => {
     const fetchNFTs = async () => {
       if (!walletAddress) return;
@@ -95,23 +108,24 @@ export default function NFTList() {
     e.currentTarget.src = '/Background/Default.jpg';
   };
 
-  // Filter NFTs based on selected ARC standard
+  const viewNFTDetails = (nft: NFTData) =>{
+    setSelectedNFT(nft);
+    setNFTDetailsDialog(true)
+  }
+
   const filteredNFTs = selectedStandard === "All" 
     ? nftList 
     : nftList.filter(nft => nft.arc_standard === selectedStandard);
 
-  // Pagination logic
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentItems = filteredNFTs.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredNFTs.length / itemsPerPage);
 
-  // Get unique ARC standards for dropdown
   const arcStandards = Array.from(new Set(nftList.map(nft => nft.arc_standard)));
 
   return (
     <Navbar message="NFT Collections">
-      {/* Filter Section */}
       <div className="flex justify-between items-center p-4">
         <Select onValueChange={setSelectedStandard} value={selectedStandard}>
           <SelectTrigger className="w-48 bg-white border border-gray-300">
@@ -128,7 +142,6 @@ export default function NFTList() {
         </Select>
       </div>
 
-      {/* Loading Indicator */}
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Spinner className="w-10 h-10 text-[#473957]" />
@@ -171,7 +184,7 @@ export default function NFTList() {
                     {metadata[nft.asset_id]?.description}
                   </p>
 
-                  <button className="w-full mt-4 bg-[#473957] hover:bg-[#5c4a6d] text-white py-2 rounded-lg transition-colors">
+                  <button onClick={() => viewNFTDetails(nft)}  className="w-full mt-4 bg-[#473957] hover:bg-[#5c4a6d] text-white py-2 rounded-lg transition-colors">
                     View Details
                   </button>
                 </div>
@@ -181,7 +194,6 @@ export default function NFTList() {
         </div>
       )}
 
-      {/* Pagination Controls */}
       <div className="flex justify-center items-center gap-4 pb-6">
         <button
           className={`px-4 py-2 rounded-lg ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#473957] hover:bg-[#5c4a6d] text-white'}`}
@@ -203,6 +215,28 @@ export default function NFTList() {
           Next
         </button>
       </div>
+      <Dialog open={nftDetailsDialog} onOpenChange={setNFTDetailsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>NFT Details</DialogTitle>
+            <DialogDescription>
+              {selectedNFT ? (
+                <p className="break-all">
+                  <p><strong>Creator:</strong> {selectedNFT.creator}</p>
+                  <p><strong>AssetId:</strong> {selectedNFT.asset_id}</p>
+                  <p><strong>Name:</strong> {selectedNFT.name}</p>
+                  <p><strong>Unit Name:</strong> {selectedNFT.unit_name}</p>
+                  <p><strong>Description:</strong> {metadata[selectedNFT.asset_id]?.description || "N/A"}</p>
+                  <p><strong>ARC Standard:</strong> {selectedNFT.arc_standard}</p>
+                  <p><strong>URL:</strong> {selectedNFT.url}</p>
+                </p>
+              ) : (
+                <p>No NFT details available.</p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </Navbar>
   );
 }
