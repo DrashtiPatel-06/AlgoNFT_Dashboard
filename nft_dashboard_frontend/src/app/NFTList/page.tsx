@@ -1,8 +1,8 @@
 "use client";
 import { Card } from "@/components/ui/card";
 import React, { useEffect, useState } from "react";
-import { NFTs } from "../AppUrl/page";
-import Navbar from "../Navbar/page";
+import { API_URLS } from '@/constants/apiUrls';
+import Navbar from "../../components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
@@ -12,14 +12,14 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import Image from "next/image";
 
 interface NFTData {
   arc_standard: string;
   asset_id: number;
   creator: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   name: string;
   unit_name: string;
   url: string;
@@ -53,11 +53,19 @@ export default function NFTList() {
       
       setLoading(true);
       try {
-        const response = await fetch(`${NFTs}=${walletAddress}`);
+        const response = await fetch(`${API_URLS.NFTs}=${walletAddress}`);
         const data = await response.json();
         
         if (Array.isArray(data)) {
           setNftList(data);
+          const initialMetadata: NFTMetadata = {};
+          data.forEach((nft: NFTData) => {
+            initialMetadata[nft.asset_id] = {
+              image: '/default-nft.gif',
+              description: 'Loading metadata...'
+            };
+          });
+          setMetadata(initialMetadata);
           data.forEach(async (nft: NFTData) => {
             try {
               let imageUrl = '/default-nft.gif';
@@ -81,9 +89,10 @@ export default function NFTList() {
 
               setMetadata(prev => ({
                 ...prev,
-                [nft.asset_id]: { image: imageUrl, description }
+                [nft.asset_id]: { image: imageUrl|| '/default-nft.gif', description }
               }));
             } catch (error) {
+              void error;
               setMetadata(prev => ({
                 ...prev,
                 [nft.asset_id]: {
@@ -150,7 +159,7 @@ export default function NFTList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
           {currentItems.length === 0 ? (
             <div className="col-span-3 flex flex-col items-center">
-              <img src="/default-nft.gif" alt="No NFTs Found" className="w-64" />
+              <Image src="/default-nft.gif" alt="No NFTs Found" width={256} height={256} className="w-64" unoptimized   />
               <p className="text-lg font-semibold text-purple-900 mt-4">No NFTs Available</p>
             </div>
           ) : (
@@ -166,11 +175,15 @@ export default function NFTList() {
                 </div>
 
                 <div className="h-48 bg-gray-100 overflow-hidden">
-                  <img
+                  <Image
                     src={metadata[nft.asset_id]?.image}
                     alt={nft.name}
+                    width={400}
+                    height={192}
                     className="w-full h-full object-fill"
                     onError={handleImageError}
+                    unoptimized  
+                    data-asset-id={nft.asset_id}
                   />
                 </div>
 
@@ -221,7 +234,7 @@ export default function NFTList() {
             <DialogTitle>NFT Details</DialogTitle>
             <DialogDescription>
               {selectedNFT ? (
-                <p className="break-all">
+                <div className="break-all space-y-2">
                   <p><strong>Creator:</strong> {selectedNFT.creator}</p>
                   <p><strong>AssetId:</strong> {selectedNFT.asset_id}</p>
                   <p><strong>Name:</strong> {selectedNFT.name}</p>
@@ -229,7 +242,7 @@ export default function NFTList() {
                   <p><strong>Description:</strong> {metadata[selectedNFT.asset_id]?.description || "N/A"}</p>
                   <p><strong>ARC Standard:</strong> {selectedNFT.arc_standard}</p>
                   <p><strong>URL:</strong> {selectedNFT.url}</p>
-                </p>
+                </div>
               ) : (
                 <p>No NFT details available.</p>
               )}

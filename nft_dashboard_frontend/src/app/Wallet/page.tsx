@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function WalletConnect() {
   const [account, setAccount] = useState<string | null>(null);
-  const peraWallet = new PeraWalletConnect();
+  const peraWallet = React.useRef(new PeraWalletConnect()).current;
   const router = useRouter();
 
   useEffect(() => {
@@ -27,12 +27,13 @@ export default function WalletConnect() {
           router.push("/Dashboard");
         }
       } catch (error) {
+        void error;
         console.log("No existing session");
       }
     };
     
     checkConnection();
-  }, []);
+  }, [peraWallet, router,account]);
 
   const connectWallet = async () => {
     try {
@@ -42,6 +43,7 @@ export default function WalletConnect() {
       localStorage.setItem("walletAddress", accounts[0]);
       router.push("/Dashboard");
     } catch (error) {
+      void error;
       console.error("Connection failed:", error);
       localStorage.removeItem("walletAddress");
       await peraWallet.disconnect();
@@ -59,9 +61,11 @@ export default function WalletConnect() {
       <div className="flex flex-col lg:flex-row shadow-xl w-full max-w-5xl bg-white rounded-xl overflow-hidden">
         
         <div className="hidden lg:block lg:w-1/2">
-          <img
+          <Image
             src="/Background/NFT-bg2.png"
             alt="NFT Background"
+            width={440}  
+            height={440}
             className="w-110 h-110 object-fill"
           />
         </div>
@@ -74,9 +78,11 @@ export default function WalletConnect() {
             Monitor your assets, explore opportunities, and trade directly from your personalized dashboard.
           </p>
           <div className="self-center">
-          <img
+          <Image
             src="/GIF/NFT.gif"
             alt="NFT Background"
+            width={140} 
+            height={120}
             className="w-35 h-30"
           />
           </div>
@@ -104,7 +110,7 @@ export default function WalletConnect() {
               </Button>
             {/* )} */}
              <p className="text-sm text-gray-600 mt-2">
-            Don't have a wallet?{" "}
+             Don&apos;t have a wallet?{" "}
             <a
               href="https://perawallet.app/"
               className="text-[#3b2e49] hover:text-[#8674be] underline"

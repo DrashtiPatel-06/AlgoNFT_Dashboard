@@ -14,14 +14,8 @@ import {
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
 import React, { useEffect, useState } from "react";
-import {
-  NFTCount,
-  TransactionCount,
-  CurrentMonthTransactionCount,
-  NFTs,
-  MonthlyTransactions,
-} from "../AppUrl/page";
-import Navbar from "../Navbar/page";
+import { API_URLS } from "@/constants/apiUrls";
+import Navbar from "../../components/navbar";
 import { Spinner } from "@/components/ui/spinner";
 
 ChartJS.register(
@@ -40,19 +34,24 @@ interface NFTCountResponse {
   total_nfts: number;
   total_transactions: number;
   total_transactions_current_month: number;
-  arc_standard: any;
-  monthly_transactions: any;
+  arc_standard?: string;
+  monthly_transactions: { [key: string]: number };
 }
+
 
 export default function Dashboard() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [nftCount, setNftCount] = useState<number | null>(null); 
-  const [transactionCount, setTransactionCount] = useState<number | null>(null); 
-  const [monthTransactionCount, setMonthTransactionCount] = useState<number | null>(null); 
+  const [nftCount, setNftCount] = useState<number | null>(null);
+  const [transactionCount, setTransactionCount] = useState<number | null>(null);
+  const [monthTransactionCount, setMonthTransactionCount] = useState<
+    number | null
+  >(null);
   const [arcCounts, setArcCounts] = useState<{ [key: string]: number }>({});
   const [arcLabels, setArcLabels] = useState<string[]>([]);
-  const [monthlyTransactions, setMonthlyTransactions] = useState<{ [key: string]: number }>({});
-  const [loading, setLoading] = useState(true); 
+  const [monthlyTransactions, setMonthlyTransactions] = useState<{
+    [key: string]: number;
+  }>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedWallet = localStorage.getItem("walletAddress");
@@ -66,6 +65,75 @@ export default function Dashboard() {
     const fetchAllData = async () => {
       setLoading(true);
       try {
+        const fetchNFTCount = async () => {
+          try {
+            const response = await fetch(
+              `${API_URLS.NFTCount}=${walletAddress}`
+            );
+            const data = await response.json();
+            setNftCount(data.total_nfts);
+          } catch (error) {
+            console.error("Error fetching NFT count:", error);
+          }
+        };
+
+        const fetchTransactionCount = async () => {
+          try {
+            const response = await fetch(
+              `${API_URLS.TransactionCount}=${walletAddress}`
+            );
+            const data = await response.json();
+            setTransactionCount(data.total_transactions);
+          } catch (error) {
+            console.error("Error fetching Transaction count:", error);
+          }
+        };
+
+        const fetchCurrentMonthTransactionCount = async () => {
+          try {
+            const response = await fetch(
+              `${API_URLS.CurrentMonthTransactionCount}=${walletAddress}`
+            );
+            const data = await response.json();
+            setMonthTransactionCount(data.total_transactions_current_month);
+          } catch (error) {
+            console.error(
+              "Error fetching Current Month Transaction count:",
+              error
+            );
+          }
+        };
+
+        const fetchARCs = async () => {
+          try {
+            const response = await fetch(`${API_URLS.NFTs}=${walletAddress}`);
+            const data = await response.json();
+            const counts: { [key: string]: number } = {};
+            data.forEach((nft: NFTCountResponse) => {
+              const arcType = nft.arc_standard
+                ? nft.arc_standard.toUpperCase()
+                : "UNKNOWN";
+              counts[arcType] = (counts[arcType] || 0) + 1;
+            });
+            setArcCounts(counts);
+            setArcLabels(Object.keys(counts));
+          } catch (error) {
+            console.error("Error fetching NFT data:", error);
+          }
+        };
+
+        const fetchMonthlyTransactions = async () => {
+          try {
+            const response = await fetch(
+              `${API_URLS.MonthlyTransactions}=${walletAddress}`
+            );
+            const data = await response.json();
+            setMonthlyTransactions(data.monthly_transactions || {});
+          } catch (error) {
+            console.error("Error fetching monthly transactions:", error);
+          }
+        };
+
         await Promise.all([
           fetchNFTCount(),
           fetchTransactionCount(),
@@ -76,76 +144,24 @@ export default function Dashboard() {
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setLoading(false); 
+        setLoading(false);
       }
     };
 
     fetchAllData();
   }, [walletAddress]);
-
-  const fetchNFTCount = async () => {
-    try {
-      const response = await fetch(`${NFTCount}=${walletAddress}`);
-      const data = await response.json();
-      setNftCount(data.total_nfts);
-    } catch (error) {
-      console.error("Error fetching NFT count:", error);
-    }
-  };
-
-  const fetchTransactionCount = async () => {
-    try {
-      const response = await fetch(`${TransactionCount}=${walletAddress}`);
-      const data = await response.json();
-      setTransactionCount(data.total_transactions);
-    } catch (error) {
-      console.error("Error fetching Transaction count:", error);
-    }
-  };
-
-  const fetchCurrentMonthTransactionCount = async () => {
-    try {
-      const response = await fetch(`${CurrentMonthTransactionCount}=${walletAddress}`);
-      const data = await response.json();
-      setMonthTransactionCount(data.total_transactions_current_month);
-    } catch (error) {
-      console.error("Error fetching Current Month Transaction count:", error);
-    }
-  };
-
-  const fetchARCs = async () => {
-    try {
-      const response = await fetch(`${NFTs}=${walletAddress}`);
-      const data = await response.json();
-      const counts: { [key: string]: number } = {};
-      data.forEach((nft: any) => {
-        const arcType = nft.arc_standard ? nft.arc_standard.toUpperCase() : "UNKNOWN";
-        counts[arcType] = (counts[arcType] || 0) + 1;
-      });
-      setArcCounts(counts);
-      setArcLabels(Object.keys(counts));
-    } catch (error) {
-      console.error("Error fetching NFT data:", error);
-    }
-  };
-
-  const fetchMonthlyTransactions = async () => {
-    try {
-      const response = await fetch(`${MonthlyTransactions}=${walletAddress}`);
-      const data = await response.json();
-      setMonthlyTransactions(data.monthly_transactions || {});
-    } catch (error) {
-      console.error("Error fetching monthly transactions:", error);
-    }
-  };
-
   const sortedMonths = Object.keys(monthlyTransactions).sort();
-  const transactionCounts = sortedMonths.map((month) => monthlyTransactions[month]);
+  const transactionCounts = sortedMonths.map(
+    (month) => monthlyTransactions[month]
+  );
 
   const stats = [
     { title: "Total NFTs", value: `${nftCount ?? 0} NFTs` },
     { title: "Total Transactions", value: `${transactionCount ?? 0} TXNs` },
-    { title: "Total Current Month Transactions", value: `${monthTransactionCount ?? 0} TXNs` },
+    {
+      title: "Total Current Month Transactions",
+      value: `${monthTransactionCount ?? 0} TXNs`,
+    },
   ];
 
   const barOptions = {
@@ -181,7 +197,9 @@ export default function Dashboard() {
       {
         label: "NFT Types",
         data: arcLabels.map((label) => arcCounts[label] || 0),
-        backgroundColor: arcLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`),
+        backgroundColor: arcLabels.map(
+          () => `#${Math.floor(Math.random() * 16777215).toString(16)}`
+        ),
         borderColor: "#fff",
         borderWidth: 2,
       },
@@ -199,7 +217,9 @@ export default function Dashboard() {
                 <Spinner />
               </div>
             ) : (
-              <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {stat.value}
+              </p>
             )}
           </Card>
         ))}

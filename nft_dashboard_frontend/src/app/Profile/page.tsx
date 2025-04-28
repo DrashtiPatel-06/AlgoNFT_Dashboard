@@ -1,21 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback  } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import Navbar from "../Navbar/page";
-import { userProfile, updateuserProfile } from "../AppUrl/page";
+import Navbar from "../../components/navbar";
+import { API_URLS } from '@/constants/apiUrls';
 import { PeraWalletConnect } from "@perawallet/connect";
 
-interface UserInterface {
-  full_name: string;
-  email: string;
-  wallet_address: string;
-  bio: string;
-  profile_image: string;
-}
+// interface UserInterface {
+//   full_name: string;
+//   email: string;
+//   wallet_address: string;
+//   bio: string;
+//   profile_image: string;
+// }
 
 export default function ProfileSettings() {
   const [formData, setFormData] = useState({
@@ -24,18 +24,25 @@ export default function ProfileSettings() {
     bio: "",
     profileImage: "https://github.com/shadcn.png",
   });
-  const [walletAddress] = useState(localStorage.getItem("walletAddress") || "");
+  const [walletAddress, setWalletAddress] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
+  // const [peraWallet] = useState(() => new PeraWalletConnect());
 
   useEffect(() => {
-    userData();
+    const storedAddress = localStorage.getItem("walletAddress");
+    if (storedAddress) {
+      setWalletAddress(storedAddress);
+    } else {
+      window.location.href = "/";
+    }
   }, []);
 
-  const userData = async () => {
+  const userData = useCallback(async () => {
+    if (!walletAddress) return;
     try {
-      const response = await fetch(`${userProfile}=${walletAddress}`);
+      const response = await fetch(`${API_URLS.userProfile}=${encodeURIComponent(walletAddress)}`);
       if (!response.ok) throw new Error("Failed to fetch user data");
       
     const responseData = await response.json();
@@ -55,14 +62,20 @@ export default function ProfileSettings() {
     } finally {
       setIsLoading(false);
     }
-  };
+  },[walletAddress]);
+
+  useEffect(() => {
+    userData();
+  }, [userData]);
 
   const updateuserData = async () => {
     if (!validateForm()) return;
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage("");
 
     try {
-      const response = await fetch(updateuserProfile, {
+      const response = await fetch(API_URLS.updateuserProfile, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,8 +97,9 @@ export default function ProfileSettings() {
       setSuccessMessage("Profile updated successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
       userData();
-    } catch (error: any) {
-      setErrors(prev => ({ ...prev, form: error.message }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      setErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsLoading(false);
     }
@@ -248,9 +262,11 @@ export default function ProfileSettings() {
               variant="destructive"
               className="cursor-pointer"
               onClick={() => {
-                new PeraWalletConnect().disconnect();
-                localStorage.removeItem("walletAddress");
-                window.location.href = "/";
+                if (typeof window !== "undefined") {
+                  new PeraWalletConnect().disconnect();
+                  localStorage.removeItem("walletAddress");
+                  window.location.href = "/";
+                }
               }}
             >
               Disconnect Wallet
