@@ -7,6 +7,7 @@ import sqlite3
 
 client = indexer.IndexerClient(indexer_address="https://testnet-idx.algonode.cloud", indexer_token="")
 
+# Fetch all the data through indexer API 
 def fetch_all_data(wallet_address):
     try:
         account_info = client.account_info(wallet_address)
@@ -20,6 +21,7 @@ def fetch_all_data(wallet_address):
         print(f"Error fetching data: {e}")
         return [], []
 
+# Process assets fetch from the Indexer API
 def process_assets(assets):
     nfts = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
@@ -35,6 +37,7 @@ def process_assets(assets):
     
     return nfts
 
+# Onchain Metdata 
 def get_onchain_metadata(asset_id):
     try:
         asset_info = client.asset_info(asset_id)
@@ -65,6 +68,7 @@ def get_onchain_metadata(asset_id):
         print(f"Error retrieving on-chain metadata for asset {asset_id}: {e}")
     return None
 
+# Asset information for a specific assets
 def get_asset_info(asset_id):
     try:
         asset_info = client.asset_info(asset_id)
@@ -100,6 +104,7 @@ def process_transactions(txn_list):
     nft_txns = [txn for txn in txn_list if txn.get("asset-transfer-transaction")]
     return nft_txns
 
+# Current month NFT Transaction
 def get_current_month_transactions(txn_list):
     current_month = datetime.now(timezone.utc).month
     current_year = datetime.now(timezone.utc).year
@@ -112,9 +117,11 @@ def get_current_month_transactions(txn_list):
 
     return current_month_txns
 
+# Total NFT Transaction Count
 def get_total_nft_transaction_count_current_month(txn_list):
     return len(get_current_month_transactions(txn_list))
 
+# Monthly NFT Transaction Count
 def get_monthly_transaction_counts(txn_list):
     monthly_counts = {} 
 
@@ -135,6 +142,7 @@ def fetch_metadata(url):
         return {"external_url": url}
     return None
 
+# ARC Standards
 def detect_arc_standard(params):
     url = params.get("url", "")
     
