@@ -228,24 +228,75 @@ def fetch_user_profile(wallet_address):
         print(f"Error fetching user profile: {e}")
         return None
 
+def fetch_nft_transfer_history(asset_id, limit=1000):
+    transfer_history = []
+    next_token = ""
 
+    while True:
+        response = client.search_transactions(
+            asset_id=asset_id,
+            txn_type="axfer",  # Asset Transfer
+            limit=limit,
+            next_page=next_token
+        )
+
+        txns = response.get("transactions", [])
+        for txn in txns:
+            sender = txn.get("sender")
+            receiver = txn.get("asset-transfer-transaction", {}).get("receiver")
+            amount = txn.get("asset-transfer-transaction", {}).get("amount")
+            round_time = txn.get("round-time")
+            note = txn.get("note")
+            price = None
+
+            if note:
+                try:
+                    note_bytes = base64.b64decode(note)
+                    note_str = note_bytes.decode('utf-8')
+                    price = note_str  # Sometimes price or metadata in note
+                except:
+                    pass
+
+            transfer_history.append({
+                "sender": sender,
+                "receiver": receiver,
+                "amount": amount,
+                "round_time": datetime.fromtimestamp(round_time, timezone.utc) if round_time else None,
+                "note": price,
+                "txn_id": txn.get("id")
+            })
+
+        if "next-token" not in response:
+            break
+        next_token = response["next-token"]
+
+    return transfer_history
 
 if __name__ == "__main__":
     wallet_address = "N3WGSFVJRZ6UNRPCXUZGRQOTVQOLRLPKZILVMNWO7OYBUQM2DZBVHZEAUY"
 
     assets, txn_list = fetch_all_data(wallet_address)
     
-    nfts = process_assets(assets)
-    total_nfts = len(nfts)
+    # nfts = process_assets(assets)
+    # total_nfts = len(nfts)
     
-    nft_txns = process_transactions(txn_list)
-    total_transactions = len(nft_txns)
+    # nft_txns = process_transactions(txn_list)
+    # total_transactions = len(nft_txns)
 
-    current_month_txns = get_current_month_transactions(txn_list)
-    total_txn_count_current_month = get_total_nft_transaction_count_current_month(txn_list)
+    # current_month_txns = get_current_month_transactions(txn_list)
+    # total_txn_count_current_month = get_total_nft_transaction_count_current_month(txn_list)
 
-    monthly_transaction = get_monthly_transaction_counts(txn_list)
-    print(monthly_transaction)
+    # monthly_transaction = get_monthly_transaction_counts(txn_list)
+    # print(monthly_transaction)
+
+    for asset in assets:
+        asset_id = asset["asset-id"]
+        history = fetch_nft_transfer_history(asset_id)
+
+        if history:  # Only show assets with transfer history
+            print(f"\n✅ Transfer history for Asset ID: {asset_id}")
+            for record in history:
+                print(record)
 
     # print(f"\nTotal NFTs: {total_nfts}")
     # print(f"Total NFT Transactions: {total_transactions}")
