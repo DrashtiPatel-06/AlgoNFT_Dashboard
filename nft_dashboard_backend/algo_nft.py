@@ -230,15 +230,13 @@ def fetch_user_profile(wallet_address):
     
 def get_asset_transfer_history(wallet_address, asset_id):
     try:
-        # Search for transfers involving BOTH wallet and asset
         response = client.search_transactions(
             address=wallet_address,
-            asset_id=asset_id,  # Must be integer
+            asset_id=asset_id,
             txn_type="axfer"
         )
         transfers = response.get("transactions", [])
 
-        # Get asset details
         asset_response = client.asset_info(asset_id)
         asset_details = asset_response.get("asset", {}).get("params", {})
 
