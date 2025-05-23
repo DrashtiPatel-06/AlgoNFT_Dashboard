@@ -8,5 +8,6 @@ export const API_URLS = {
   NFTs: `${url}/nfts?wallet`,
   MonthlyTransactions: `${url}/nfts/transactions/monthly?wallet`,
   userProfile: `${url}/nfts/profile?wallet`,
-  updateuserProfile: `${url}/nfts/update_profile`
+  updateuserProfile: `${url}/nfts/update_profile`,
+  AssetTransfer:`${url}/nfts/with-transfer-history?wallet`
 };
