@@ -33,7 +33,6 @@ export default function NFTTransfers() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedStandard, setSelectedStandard] = useState("All");
   const [expandedAsset, setExpandedAsset] = useState<number | null>(null);
   const [walletAddress, setWalletAddress] = useState("");
   const itemsPerPage = 10;
@@ -68,14 +67,10 @@ export default function NFTTransfers() {
       fetchNFTTransfers();
       localStorage.setItem("walletAddress", walletAddress);
     }
-  }, [walletAddress]);
+  }, [walletAddress,fetchNFTTransfers]);
 
-  const filteredData = selectedStandard === "All"
-    ? nftData
-    : nftData.filter(nft => nft.arc_standard === selectedStandard);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const currentItems = filteredData.slice(
+  const totalPages = Math.ceil(nftData.length / itemsPerPage);
+  const currentItems = nftData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -211,8 +206,8 @@ export default function NFTTransfers() {
             <div className="flex justify-between items-center mt-6">
               <div className="text-sm text-gray-600">
                 Showing {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                {Math.min(currentPage * itemsPerPage, filteredData.length)} of{" "}
-                {filteredData.length} results
+                {Math.min(currentPage * itemsPerPage, nftData.length)} of{" "}
+                {nftData.length} results
               </div>
               <div className="flex gap-2">
                 <Button
