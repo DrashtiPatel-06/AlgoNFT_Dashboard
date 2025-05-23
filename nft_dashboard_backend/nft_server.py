@@ -171,6 +171,7 @@ def get_nfts_with_transfer_history():
                         "asset-id": asset["asset-id"],
                         "name": asset_details.get("name", "Unnamed"),
                         "unit-name": asset_details.get("unit-name", ""),
+                        "amount": asset_details.get("amount", 0),
                         "transfers": transfer_list
                     })
 
