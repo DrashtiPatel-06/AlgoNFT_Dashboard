@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import algo_nft  
 from flask_cors import CORS
 from flask_caching import Cache
+import concurrent.futures
 
 app = Flask(__name__)
 CORS(app)
@@ -125,6 +126,58 @@ def get_profile():
         return jsonify({"error": "User not found"}), 404
 
     return jsonify({"profile": profile}), 200
-    
+
+@app.route('/nfts/with-transfer-history', methods=['GET'])
+def get_nfts_with_transfer_history():
+    wallet_address = request.args.get('wallet')
+    if not wallet_address:
+        return jsonify({"error": "Wallet address is required"}), 400
+
+    assets, _ = algo_nft.fetch_all_data(wallet_address)
+    assets_with_history = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_asset = {}
+        for asset in assets:
+            if asset.get("amount", 0) <= 0:
+                continue
+
+            try:
+                asset_id = int(asset["asset-id"]) 
+            except (KeyError, ValueError):
+                app.logger.error(f"Skipping invalid asset ID: {asset.get('asset-id')}")
+                continue
+
+            future = executor.submit(
+                algo_nft.get_asset_transfer_history, 
+                wallet_address, 
+                asset_id 
+            )
+            future_to_asset[future] = asset
+
+        for future in concurrent.futures.as_completed(future_to_asset):
+            asset = future_to_asset[future]
+            try:
+                transfers, asset_details = future.result()  
+
+                if transfers:
+                    transfer_list = [{
+                        "sender": tx.get('sender'),
+                        "receiver": tx.get('asset-transfer-transaction', {}).get('receiver'),
+                        "tx_id": tx.get('id')
+                    } for tx in transfers]
+
+                    assets_with_history.append({
+                        "asset-id": asset["asset-id"],
+                        "name": asset_details.get("name", "Unnamed"),
+                        "unit-name": asset_details.get("unit-name", ""),
+                        "transfers": transfer_list
+                    })
+
+            except Exception as e:
+                app.logger.error(f"Error processing asset {asset['asset-id']}: {e}")
+
+    return jsonify({"count": len(assets_with_history), "assets": assets_with_history})
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
