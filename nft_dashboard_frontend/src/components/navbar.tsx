@@ -59,7 +59,7 @@ export default function Navbar(props: NavbarProps) {
             {[
               { name: "Dashboard", path: "/Dashboard" },
               { name: "NFT Collection", path: "/NFTList" },
-              { name: "NFT Transfer Data", path: "/NFTTransfer" },
+              { name: "Assets Transfer", path: "/AssetTransfer" },
               { name: "Profile Setting", path: "/Profile" },
             ].map((item) => (
               <Link
