@@ -67,7 +67,7 @@ export default function NFTTransfers() {
       fetchNFTTransfers();
       localStorage.setItem("walletAddress", walletAddress);
     }
-  }, [walletAddress,fetchNFTTransfers]);
+  }, [walletAddress]);
 
   const totalPages = Math.ceil(nftData.length / itemsPerPage);
   const currentItems = nftData.slice(
