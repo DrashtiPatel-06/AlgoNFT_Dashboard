@@ -92,7 +92,7 @@ export default function NFTTransfers() {
   };
 
   return (
-    <Navbar message="NFT Transfer History">
+    <Navbar message="Assets Transfer History">
       <div className="p-6 max-w-7xl mx-auto">
         <Toaster position="bottom-right" expand={false} richColors />
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
